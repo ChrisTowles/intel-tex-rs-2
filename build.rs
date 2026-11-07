@@ -113,6 +113,14 @@ fn main() {
 
     println!("cargo:rustc-link-lib=static={}", libname);
 
+    // The packaged ASTC encoder is C++ and references the C++ runtime (`__gxx_personality_v0`):
+    // a binary that links this crate fails to link unless something else pulls the runtime in.
+    match std::env::var("CARGO_CFG_TARGET_OS").unwrap().as_str() {
+        "macos" | "ios" => println!("cargo:rustc-link-lib=dylib=c++"),
+        "windows" => {}
+        _ => println!("cargo:rustc-link-lib=dylib=stdc++"),
+    }
+
     let libpath = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/ispc");
     println!("cargo:rustc-link-search=native={}", libpath.display());
     println!("cargo:rerun-if-changed={}", libpath.join(libfile).display());
